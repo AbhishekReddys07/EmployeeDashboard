@@ -1,15 +1,17 @@
 {
+  "homepage": "https://github.com/AbhishekReddys07/EmployeeDashboard.github.io.git",
   "name": "employee-dashboard",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "react-scripts start",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-  "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build"
   },
   "dependencies": {
     "date-fns": "^3.6.0",
