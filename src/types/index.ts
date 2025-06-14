@@ -8,33 +8,20 @@ export interface User {
   avatar?: string;
 }
 
-export interface DashboardMetrics {
-  revenue: {
-    current: number;
-    previous: number;
-    growth: number;
-  };
-  profit: {
-    current: number;
-    previous: number;
-    growth: number;
-  };
-  employees: number;
-  projects: number;
-}
-
-export interface ChartData {
-  name: string;
-  value: number;
-  growth?: number;
+export interface DashboardMetric {
+  title: string;
+  value: string;
+  change: number;
+  icon: string;
+  color: string;
 }
 
 export interface Announcement {
   id: string;
   title: string;
   content: string;
-  priority: 'low' | 'medium' | 'high';
   date: string;
+  priority: 'low' | 'medium' | 'high';
   author: string;
 }
 
@@ -42,18 +29,27 @@ export interface Goal {
   id: string;
   title: string;
   description: string;
-  progress: number;
   deadline: string;
+  progress: number;
+  status: 'in-progress' | 'completed' | 'overdue';
   assignedTo: string;
-  status: 'pending' | 'in-progress' | 'completed';
 }
 
-export interface Ticket {
+export interface SupportTicket {
   id: string;
   title: string;
   description: string;
   priority: 'low' | 'medium' | 'high';
-  status: 'open' | 'in-progress' | 'resolved';
+  status: 'open' | 'in-progress' | 'closed';
   createdAt: string;
   createdBy: string;
+}
+
+export interface ChartData {
+  name: string;
+  value: number;
+  month?: string;
+  revenue?: number;
+  profit?: number;
+  expenses?: number;
 }

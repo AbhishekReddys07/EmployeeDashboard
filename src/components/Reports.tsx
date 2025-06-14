@@ -1,310 +1,217 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Download, FileText, Calendar, Filter, BarChart3, Users, DollarSign, TrendingUp } from 'lucide-react';
-import { format } from 'date-fns';
+import { Download, FileText, Calendar, Filter, Printer } from 'lucide-react';
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 
 const Reports: React.FC = () => {
-  const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
-  const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [reportType, setReportType] = useState('monthly');
+  const [selectedReport, setSelectedReport] = useState('monthly');
+  const [selectedPeriod, setSelectedPeriod] = useState('current');
 
-  const reportTemplates = [
-    {
-      id: 'revenue',
-      title: 'Revenue Report',
-      description: 'Detailed revenue analysis with monthly breakdowns',
-      icon: <DollarSign className="h-6 w-6 text-green-500" />,
-      color: 'bg-green-50 border-green-200',
-      access: ['admin', 'finance']
+  const reportTypes = [
+    { id: 'monthly', name: 'Monthly Performance Report', description: 'Comprehensive monthly business metrics' },
+    { id: 'quarterly', name: 'Quarterly Review Report', description: 'Quarterly analysis and insights' },
+    { id: 'hr', name: 'HR Analytics Report', description: 'Employee performance and HR metrics' },
+    { id: 'finance', name: 'Financial Summary Report', description: 'Revenue, profit, and financial analysis' },
+    { id: 'sales', name: 'Sales Performance Report', description: 'Sales metrics and team performance' }
+  ];
+
+  const mockReportData = {
+    monthly: {
+      title: 'Monthly Performance Report - January 2024',
+      sections: [
+        { name: 'Revenue Analysis', data: { total: '$420,000', growth: '+15.3%' } },
+        { name: 'Profit Margins', data: { net: '$125,000', margin: '29.8%' } },
+        { name: 'Employee Metrics', data: { count: 58, productivity: '94%' } },
+        { name: 'Project Status', data: { active: 24, completed: 18 } }
+      ]
     },
-    {
-      id: 'performance',
-      title: 'Performance Review',
-      description: 'Employee and department performance metrics',
-      icon: <TrendingUp className="h-6 w-6 text-blue-500" />,
-      color: 'bg-blue-50 border-blue-200',
-      access: ['admin', 'hr']
-    },
-    {
-      id: 'hr',
-      title: 'HR Analytics',
-      description: 'Hiring, retention, and employee satisfaction data',
-      icon: <Users className="h-6 w-6 text-purple-500" />,
-      color: 'bg-purple-50 border-purple-200',
-      access: ['admin', 'hr']
-    },
-    {
-      id: 'financial',
-      title: 'Financial Summary',
-      description: 'Profit & loss, expenses, and budget analysis',
-      icon: <BarChart3 className="h-6 w-6 text-orange-500" />,
-      color: 'bg-orange-50 border-orange-200',
-      access: ['admin', 'finance']
+    quarterly: {
+      title: 'Quarterly Review Report - Q4 2023',
+      sections: [
+        { name: 'Business Growth', data: { revenue: '$1.45M', growth: '+22.1%' } },
+        { name: 'Market Position', data: { share: '12.5%', rank: '3rd' } },
+        { name: 'Team Expansion', data: { hired: 12, retention: '92%' } },
+        { name: 'Goals Achievement', data: { completed: '87%', onTrack: '91%' } }
+      ]
     }
-  ];
-
-  const recentReports = [
-    {
-      id: '1',
-      title: 'December 2023 Revenue Report',
-      type: 'revenue',
-      createdAt: '2024-01-02T10:00:00Z',
-      size: '2.3 MB',
-      format: 'PDF'
-    },
-    {
-      id: '2',
-      title: 'Q4 2023 Performance Review',
-      type: 'performance',
-      createdAt: '2024-01-01T15:30:00Z',
-      size: '1.8 MB',
-      format: 'Excel'
-    },
-    {
-      id: '3',
-      title: 'HR Analytics - December 2023',
-      type: 'hr',
-      createdAt: '2023-12-31T09:15:00Z',
-      size: '1.2 MB',
-      format: 'PDF'
-    },
-    {
-      id: '4',
-      title: 'Financial Summary - Q4 2023',
-      type: 'financial',
-      createdAt: '2023-12-30T14:45:00Z',
-      size: '3.1 MB',
-      format: 'Excel'
-    }
-  ];
-
-  const departments = [
-    { value: 'all', label: 'All Departments' },
-    { value: 'engineering', label: 'Engineering' },
-    { value: 'sales', label: 'Sales' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'hr', label: 'Human Resources' },
-    { value: 'finance', label: 'Finance' }
-  ];
-
-  const hasAccess = (reportAccess: string[]) => {
-    return user?.role === 'admin' || reportAccess.includes(user?.role || '');
   };
 
-  const generateReport = (reportId: string, format: 'pdf' | 'excel') => {
-    // Simulate report generation
-    const reportName = reportTemplates.find(r => r.id === reportId)?.title || 'Report';
-    const fileName = `${reportName}_${selectedMonth}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+  const generatePDF = (reportType: string) => {
+    const doc = new jsPDF();
+    const report = mockReportData[reportType as keyof typeof mockReportData];
     
-    // In a real app, this would trigger a download
-    alert(`Generating ${fileName}...`);
+    // Header
+    doc.setFontSize(20);
+    doc.text(report.title, 20, 30);
+    
+    // Date
+    doc.setFontSize(12);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 45);
+    
+    // Sections
+    let yPosition = 60;
+    report.sections.forEach((section, index) => {
+      doc.setFontSize(14);
+      doc.text(section.name, 20, yPosition);
+      
+      doc.setFontSize(11);
+      Object.entries(section.data).forEach(([key, value]) => {
+        yPosition += 15;
+        doc.text(`${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`, 30, yPosition);
+      });
+      
+      yPosition += 20;
+    });
+    
+    doc.save(`${reportType}-report-${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
-  const downloadReport = (reportId: string) => {
-    // Simulate report download
-    alert(`Downloading report ${reportId}...`);
+  const generateExcel = (reportType: string) => {
+    const report = mockReportData[reportType as keyof typeof mockReportData];
+    const workbook = XLSX.utils.book_new();
+    
+    const data = [
+      [report.title],
+      [`Generated on: ${new Date().toLocaleDateString()}`],
+      [''],
+      ...report.sections.flatMap(section => [
+        [section.name],
+        ...Object.entries(section.data).map(([key, value]) => [`  ${key}`, value]),
+        ['']
+      ])
+    ];
+    
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+    XLSX.writeFile(workbook, `${reportType}-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const previewReport = (reportType: string) => {
+    const report = mockReportData[reportType as keyof typeof mockReportData];
+    const content = `
+      ${report.title}
+      Generated on: ${new Date().toLocaleDateString()}
+      
+      ${report.sections.map(section => `
+        ${section.name}:
+        ${Object.entries(section.data).map(([key, value]) => `  • ${key}: ${value}`).join('\n')}
+      `).join('\n')}
+    `;
+    
+    alert(content);
   };
 
   return (
-    <div className="p-6 space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FileText className="h-8 w-8 text-blue-600" />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
-            <p className="text-gray-600 mt-1">Generate and download business reports</p>
-          </div>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
+        <div className="flex space-x-4">
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="current">Current Period</option>
+            <option value="previous">Previous Period</option>
+            <option value="custom">Custom Range</option>
+          </select>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl p-6 border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Report Filters</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="month" className="block text-sm font-medium text-gray-700 mb-2">
-              Month/Period
-            </label>
-            <input
-              type="month"
-              id="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
-              Department
-            </label>
-            <select
-              id="department"
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {departments.map((dept) => (
-                <option key={dept.value} value={dept.value}>
-                  {dept.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="reportType" className="block text-sm font-medium text-gray-700 mb-2">
-              Report Type
-            </label>
-            <select
-              id="reportType"
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="yearly">Yearly</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Report Templates */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Generate New Report</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {reportTemplates.map((template) => (
-            <div
-              key={template.id}
-              className={`rounded-xl p-6 border transition-all duration-200 ${
-                hasAccess(template.access)
-                  ? `${template.color} hover:shadow-md cursor-pointer`
-                  : 'bg-gray-50 border-gray-200 opacity-50'
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div className="mt-1">{template.icon}</div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{template.title}</h3>
-                  <p className="text-gray-600 mb-4">{template.description}</p>
-                  
-                  {hasAccess(template.access) ? (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => generateReport(template.id, 'pdf')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                      >
-                        <Download className="h-4 w-4" />
-                        PDF
-                      </button>
-                      <button
-                        onClick={() => generateReport(template.id, 'excel')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                      >
-                        <Download className="h-4 w-4" />
-                        Excel
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-500">
-                      Access restricted to: {template.access.join(', ')}
-                    </div>
-                  )}
-                </div>
+      {/* Report Types */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {reportTypes.map((reportType) => (
+          <div key={reportType.id} className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{reportType.name}</h3>
+                <p className="text-sm text-gray-600">{reportType.description}</p>
               </div>
             </div>
-          ))}
+
+            <div className="flex space-x-2">
+              <button
+                onClick={() => previewReport(reportType.id)}
+                className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                <span className="text-sm">Preview</span>
+              </button>
+              <button
+                onClick={() => generatePDF(reportType.id)}
+                className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-sm">PDF</span>
+              </button>
+              <button
+                onClick={() => generateExcel(reportType.id)}
+                className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-sm">Excel</span>
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Stats */}
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Quick Statistics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">24</div>
+            <div className="text-sm text-gray-600">Reports Generated</div>
+            <div className="text-xs text-gray-500">This Month</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">94%</div>
+            <div className="text-sm text-gray-600">Data Accuracy</div>
+            <div className="text-xs text-gray-500">System Wide</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-orange-600">2.1s</div>
+            <div className="text-sm text-gray-600">Avg Generation</div>
+            <div className="text-xs text-gray-500">Time</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">156</div>
+            <div className="text-sm text-gray-600">Downloads</div>
+            <div className="text-xs text-gray-500">Last 30 Days</div>
+          </div>
         </div>
       </div>
 
       {/* Recent Reports */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Reports</h2>
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Report Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Size
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Format
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {recentReports.map((report) => {
-                  const template = reportTemplates.find(t => t.id === report.type);
-                  const canDownload = template ? hasAccess(template.access) : false;
-                  
-                  return (
-                    <tr key={report.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          {template?.icon}
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{report.title}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                          {report.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(new Date(report.createdAt), 'MMM dd, yyyy')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {report.size}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {report.format}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {canDownload ? (
-                          <button
-                            onClick={() => downloadReport(report.id)}
-                            className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
-                          >
-                            <Download className="h-4 w-4" />
-                            Download
-                          </button>
-                        ) : (
-                          <span className="text-gray-400">No Access</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Reports</h3>
+        <div className="space-y-4">
+          {[
+            { name: 'Monthly Performance - December 2023', date: '2024-01-05', type: 'PDF', size: '2.4 MB' },
+            { name: 'HR Analytics - Q4 2023', date: '2024-01-03', type: 'Excel', size: '1.8 MB' },
+            { name: 'Financial Summary - December 2023', date: '2024-01-02', type: 'PDF', size: '3.1 MB' },
+            { name: 'Sales Performance - Q4 2023', date: '2023-12-30', type: 'Excel', size: '2.2 MB' }
+          ].map((report, index) => (
+            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <div className="flex items-center space-x-3">
+                <FileText className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="font-medium text-gray-900">{report.name}</p>
+                  <p className="text-sm text-gray-500">{report.date} • {report.type} • {report.size}</p>
+                </div>
+              </div>
+              <button className="flex items-center space-x-2 px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <Download className="w-4 h-4" />
+                <span className="text-sm">Download</span>
+              </button>
+            </div>
+          ))}
         </div>
       </div>
-
-      {/* Empty State */}
-      {recentReports.length === 0 && (
-        <div className="text-center py-12">
-          <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No reports generated yet</h3>
-          <p className="text-gray-500">Generate your first report using the templates above.</p>
-        </div>
-      )}
     </div>
   );
 };
